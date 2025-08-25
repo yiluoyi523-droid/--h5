@@ -25,31 +25,23 @@
     .qr-container img { max-width:200px; }
     .success-message { display:none; text-align:center; font-size:20px; color:#06c1ae; margin-top:20px; }
 
-    /* ===== 新增水印样式 ===== */
-body::before {
-  content: "成优网";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-around;
-  align-items: space-around;
-  color: rgba(0,0,0,0.15); /* 提高透明度 */
-  font-size: 60px;          /* 字体变大 */
-  transform: rotate(-30deg);
-}
-
+    /* ===== 优化后的水印样式 ===== */
+    body::before {
+      content: "成优网";
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 60px;
+      color: rgba(0, 0, 0, 0.08); /* 更淡一点 */
+      white-space: nowrap;
+      z-index: 0;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
   <div class="container">
-
     <!-- ===== 第一页：套餐界面 ===== -->
     <div class="page active" id="page1">
       <h1>成优网·套餐价格表</h1>
@@ -60,7 +52,16 @@ body::before {
 
     <!-- ===== 第二页：退款协议 + 支付 ===== -->
     <div class="page" id="page2">
-      <h1>会员服务须知与退款条款</h1>
+      <!-- 新增返回按钮 -->
+      <button onclick="goBack()" style="margin-bottom:15px;background:#ddd;color:#333;
+      padding:8px 12px;border:none;border-radius:6px;cursor:pointer;">返回套餐页面</button>
+
+      <h2>会员服务须知与退款条款</h2>
+
+      <!-- 新增提示 -->
+      <p style="font-size:14px;color:#666;margin-bottom:10px;">
+        请先勾选并完整阅读条款，支付按钮才会解锁
+      </p>
 
       <div class="checkbox-container">
         <input type="checkbox" id="agree">
@@ -122,6 +123,7 @@ body::before {
       <div class="qr-container" id="qrContainer">
         <p>请使用微信扫描二维码支付对应金额：</p>
         <img src="https://rpin-cc.oss-cn-chengdu.aliyuncs.com/zimu_zhaopin/2508/22/68a82d512cf72.png" alt="收款二维码">
+        <p style="font-size:12px;color:#999;">二维码由【成优网官方】提供，请放心支付</p>
       </div>
 
       <div class="success-message" id="successMessage">
@@ -129,68 +131,3 @@ body::before {
       </div>
     </div>
   </div>
-
-  <script>
-    // 页面切换逻辑
-    const page1 = document.getElementById('page1');
-    const page2 = document.getElementById('page2');
-    const nextBtn = document.getElementById('nextBtn');
-
-    nextBtn.addEventListener('click', () => {
-      page1.classList.remove('active');
-      page2.classList.add('active');
-    });
-
-    // 勾选显示协议 + 滚动到底启用支付
-    const agreeCheckbox = document.getElementById('agree');
-    const payBtn = document.getElementById('payBtn');
-    const qrContainer = document.getElementById('qrContainer');
-    const successMessage = document.getElementById('successMessage');
-    const refundContent = document.getElementById('refundContent');
-
-    agreeCheckbox.addEventListener('change', () => {
-      if (agreeCheckbox.checked) {
-        refundContent.style.display = 'block';  // 显示协议
-        payBtn.disabled = true;                 // 禁用支付按钮
-      } else {
-        refundContent.style.display = 'none';
-        payBtn.disabled = true;
-      }
-    });
-
-    refundContent.addEventListener('scroll', () => {
-      const scrollBottom = refundContent.scrollHeight - refundContent.scrollTop - refundContent.clientHeight;
-      if (scrollBottom < 5 && agreeCheckbox.checked) {
-        payBtn.disabled = false;
-      }
-    });
-
-    // 支付按钮点击逻辑
-    payBtn.addEventListener('click', () => {
-      qrContainer.style.display = 'block';  // 显示二维码
-
-      const confirmPayBtn = document.createElement('button');
-      confirmPayBtn.textContent = "我已支付";
-      confirmPayBtn.style.display = "block";
-      confirmPayBtn.style.width = "100%";
-      confirmPayBtn.style.padding = "15px";
-      confirmPayBtn.style.marginTop = "10px";
-      confirmPayBtn.style.background = "#06c1ae";
-      confirmPayBtn.style.color = "#fff";
-      confirmPayBtn.style.border = "none";
-      confirmPayBtn.style.borderRadius = "8px";
-      confirmPayBtn.style.cursor = "pointer";
-      page2.appendChild(confirmPayBtn);
-
-      confirmPayBtn.addEventListener('click', () => {
-        successMessage.style.display = 'block';
-        qrContainer.style.display = 'none';
-        confirmPayBtn.style.display = 'none';
-        successMessage.scrollIntoView({behavior: "smooth"});
-      });
-    });
-  </script>
-</body>
-</html>
-
-
