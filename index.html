@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>成优网·套餐价格表及购买须知</title>
   <style>
     /* ===== 原有样式保持不变 ===== */
@@ -26,24 +26,20 @@
     .success-message { display:none; text-align:center; font-size:20px; color:#06c1ae; margin-top:20px; }
 
     /* ===== 新增水印样式 ===== */
-body::before {
-  content: "成优网";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-around;
-  align-items: space-around;
-  color: rgba(0,0,0,0.15); /* 提高透明度 */
-  font-size: 60px;          /* 字体变大 */
-  transform: rotate(-30deg);
-}
-
+    body::before {
+      content: "成优网";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      display: block;
+      color: rgba(0,0,0,0.15);
+      font-size: 60px;
+      transform: rotate(-30deg);
+      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -149,45 +145,43 @@ body::before {
     const refundContent = document.getElementById('refundContent');
 
     agreeCheckbox.addEventListener('change', () => {
-      if (agreeCheckbox.checked) {
-        refundContent.style.display = 'block';  // 显示协议
-        payBtn.disabled = true;                 // 禁用支付按钮
-      } else {
-        refundContent.style.display = 'none';
-        payBtn.disabled = true;
-      }
+      refundContent.style.display = agreeCheckbox.checked ? 'block' : 'none';
+      payBtn.disabled = true;
     });
 
     refundContent.addEventListener('scroll', () => {
       const scrollBottom = refundContent.scrollHeight - refundContent.scrollTop - refundContent.clientHeight;
-      if (scrollBottom < 5 && agreeCheckbox.checked) {
-        payBtn.disabled = false;
-      }
+      payBtn.disabled = !(scrollBottom < 5 && agreeCheckbox.checked);
     });
 
     // 支付按钮点击逻辑
+    let confirmPayBtn = null;
+
     payBtn.addEventListener('click', () => {
       qrContainer.style.display = 'block';  // 显示二维码
+      if (!confirmPayBtn) {
+        confirmPayBtn = document.createElement('button');
+        confirmPayBtn.textContent = "我已支付";
+        Object.assign(confirmPayBtn.style, {
+          display: "block",
+          width: "100%",
+          padding: "15px",
+          marginTop: "10px",
+          background: "#06c1ae",
+          color: "#fff",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer"
+        });
+        page2.appendChild(confirmPayBtn);
 
-      const confirmPayBtn = document.createElement('button');
-      confirmPayBtn.textContent = "我已支付";
-      confirmPayBtn.style.display = "block";
-      confirmPayBtn.style.width = "100%";
-      confirmPayBtn.style.padding = "15px";
-      confirmPayBtn.style.marginTop = "10px";
-      confirmPayBtn.style.background = "#06c1ae";
-      confirmPayBtn.style.color = "#fff";
-      confirmPayBtn.style.border = "none";
-      confirmPayBtn.style.borderRadius = "8px";
-      confirmPayBtn.style.cursor = "pointer";
-      page2.appendChild(confirmPayBtn);
-
-      confirmPayBtn.addEventListener('click', () => {
-        successMessage.style.display = 'block';
-        qrContainer.style.display = 'none';
-        confirmPayBtn.style.display = 'none';
-        successMessage.scrollIntoView({behavior: "smooth"});
-      });
+        confirmPayBtn.addEventListener('click', () => {
+          successMessage.style.display = 'block';
+          qrContainer.style.display = 'none';
+          confirmPayBtn.style.display = 'none';
+          successMessage.scrollIntoView({behavior: "smooth"});
+        });
+      }
     });
   </script>
 </body>
