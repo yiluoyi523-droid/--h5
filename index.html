@@ -52,7 +52,7 @@
       <h1>成优网·套餐价格表</h1>
       <p>请查看套餐价格表如下：</p>
       <img class="img-preview" src="https://rpin-cc.oss-cn-chengdu.aliyuncs.com/zimu_zhaopin/2508/22/68a83171853a7.jpg" alt="套餐价格表">
-      <button class="next-btn" id="nextBtn">下一步</button>
+    <button class="next-btn" id="nextBtn" type="button" onclick="goNext()">下一步</button>
     </div>
 
     <!-- ===== 第二页：退款协议 + 支付 ===== -->
@@ -129,18 +129,22 @@
   </div>
 
   <!-- ===== JS 脚本 ===== -->
-  <script>
-    // 页面切换逻辑
-    const page1 = document.getElementById('page1');
-    const page2 = document.getElementById('page2');
-    const nextBtn = document.getElementById('nextBtn');
+<script>
+  // 新增 goNext 函数，绑定在按钮 onclick
+  function goNext() {
+    document.getElementById('page1').classList.remove('active');
+    document.getElementById('page2').classList.add('active');
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
-    nextBtn.addEventListener('click', () => {
-      page1.classList.remove('active');
-      page2.classList.add('active');
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+  // 页面切换逻辑（原来的也可以保留或删除）
+  const page1 = document.getElementById('page1');
+  const page2 = document.getElementById('page2');
+  const nextBtn = document.getElementById('nextBtn');
 
+  // nextBtn.addEventListener('click', ...) 可以删除，改用按钮 onclick="goNext()"
+</script>
+  
     // 返回按钮逻辑
     function goBack() {
       page2.classList.remove('active');
@@ -203,3 +207,4 @@
   </script>
 </body>
 </html>
+
