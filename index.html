@@ -128,82 +128,72 @@
     </div>
   </div>
 
-  <!-- ===== JS 脚本 ===== -->
 <script>
-  // 新增 goNext 函数，绑定在按钮 onclick
+  // 下一步按钮
   function goNext() {
     document.getElementById('page1').classList.remove('active');
     document.getElementById('page2').classList.add('active');
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // 页面切换逻辑（原来的也可以保留或删除）
-  const page1 = document.getElementById('page1');
+  // 返回按钮
+  function goBack() {
+    document.getElementById('page2').classList.remove('active');
+    document.getElementById('page1').classList.add('active');
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // 页面元素绑定
+  const agreeCheckbox = document.getElementById('agree');
+  const payBtn = document.getElementById('payBtn');
+  const qrContainer = document.getElementById('qrContainer');
+  const successMessage = document.getElementById('successMessage');
+  const refundContent = document.getElementById('refundContent');
   const page2 = document.getElementById('page2');
-  const nextBtn = document.getElementById('nextBtn');
- // nextBtn.addEventListener('click', ...) 可以删除，改用按钮 onclick="goNext()"
-  
-    // 返回按钮逻辑
-    function goBack() {
-      page2.classList.remove('active');
-      page1.classList.add('active');
-      window.scrollTo({ top: 0, behavior: "smooth" });
+
+  // 协议勾选显示 + 滚动到底启用支付
+  agreeCheckbox.addEventListener('change', () => {
+    if (agreeCheckbox.checked) {
+      refundContent.style.display = 'block';
+      payBtn.disabled = true;
+    } else {
+      refundContent.style.display = 'none';
+      payBtn.disabled = true;
     }
+  });
 
-    // 勾选显示协议 + 滚动到底启用支付
-    const agreeCheckbox = document.getElementById('agree');
-    const payBtn = document.getElementById('payBtn');
-    const qrContainer = document.getElementById('qrContainer');
-    const successMessage = document.getElementById('successMessage');
-    const refundContent = document.getElementById('refundContent');
+  refundContent.addEventListener('scroll', () => {
+    const scrollBottom = refundContent.scrollHeight - refundContent.scrollTop - refundContent.clientHeight;
+    if (scrollBottom < 5 && agreeCheckbox.checked) {
+      payBtn.disabled = false;
+    }
+  });
 
-    agreeCheckbox.addEventListener('change', () => {
-      if (agreeCheckbox.checked) {
-        refundContent.style.display = 'block';  // 显示协议
-        payBtn.disabled = true;                 // 先禁用支付按钮
-      } else {
-        refundContent.style.display = 'none';
-        payBtn.disabled = true;
-      }
-    });
+  // 支付按钮点击逻辑
+  let confirmPayBtn = null;
+  payBtn.addEventListener('click', () => {
+    qrContainer.style.display = 'block';
 
-    refundContent.addEventListener('scroll', () => {
-      const scrollBottom = refundContent.scrollHeight - refundContent.scrollTop - refundContent.clientHeight;
-      if (scrollBottom < 5 && agreeCheckbox.checked) {
-        payBtn.disabled = false;
-      }
-    });
+    if (!confirmPayBtn) {
+      confirmPayBtn = document.createElement('button');
+      confirmPayBtn.textContent = "我已支付";
+      confirmPayBtn.style.display = "block";
+      confirmPayBtn.style.width = "100%";
+      confirmPayBtn.style.padding = "15px";
+      confirmPayBtn.style.marginTop = "10px";
+      confirmPayBtn.style.background = "#06c1ae";
+      confirmPayBtn.style.color = "#fff";
+      confirmPayBtn.style.border = "none";
+      confirmPayBtn.style.borderRadius = "8px";
+      confirmPayBtn.style.cursor = "pointer";
+      page2.appendChild(confirmPayBtn);
 
-    // 支付按钮点击逻辑
-    let confirmPayBtn = null;
-    payBtn.addEventListener('click', () => {
-      qrContainer.style.display = 'block';  // 显示二维码
-
-      // 避免重复生成按钮
-      if (!confirmPayBtn) {
-        confirmPayBtn = document.createElement('button');
-        confirmPayBtn.textContent = "我已支付";
-        confirmPayBtn.style.display = "block";
-        confirmPayBtn.style.width = "100%";
-        confirmPayBtn.style.padding = "15px";
-        confirmPayBtn.style.marginTop = "10px";
-        confirmPayBtn.style.background = "#06c1ae";
-        confirmPayBtn.style.color = "#fff";
-        confirmPayBtn.style.border = "none";
-        confirmPayBtn.style.borderRadius = "8px";
-        confirmPayBtn.style.cursor = "pointer";
-        page2.appendChild(confirmPayBtn);
-
-        confirmPayBtn.addEventListener('click', () => {
-          successMessage.style.display = 'block';
-          qrContainer.style.display = 'none';
-          confirmPayBtn.style.display = 'none';
-          successMessage.scrollIntoView({behavior: "smooth"});
-        });
-      }
-    });
-  </script>
-</body>
-</html>
-
-
+      confirmPayBtn.addEventListener('click', () => {
+        successMessage.style.display = 'block';
+        qrContainer.style.display = 'none';
+        confirmPayBtn.style.display = 'none';
+        successMessage.scrollIntoView({behavior: "smooth"});
+      });
+    }
+  });
+</script>
