@@ -41,6 +41,38 @@
     textarea { min-height:76px; resize:vertical; }
     .message-textarea { min-height:170px; margin-top:10px; line-height:1.7; }
     input:focus, textarea:focus { border-color:#06c1ae; box-shadow:0 0 0 3px rgba(6,193,174,0.14); }
+    .hint {
+      margin:7px 0 0;
+      color:#667085;
+      font-size:13px;
+      line-height:1.5;
+    }
+    .qr-preview {
+      display:none;
+      margin-top:10px;
+      padding:10px;
+      border:1px solid #d8e7ff;
+      border-radius:8px;
+      background:#f8fbff;
+      text-align:center;
+    }
+    .qr-preview img {
+      display:block;
+      width:150px;
+      max-width:100%;
+      height:auto;
+      margin:0 auto 8px;
+      border-radius:6px;
+      border:1px solid #e5e7eb;
+      background:#fff;
+    }
+    .qr-preview span {
+      display:block;
+      color:#475467;
+      font-size:13px;
+      line-height:1.5;
+      word-break:break-all;
+    }
     button {
       width:100%;
       border:0;
@@ -87,6 +119,14 @@
       <input id="adminToken" type="password" autocomplete="current-password" placeholder="请输入管理口令">
     </div>
     <div class="field">
+      <label for="customerServiceName">客服姓名/编号</label>
+      <input id="customerServiceName" type="text" autocomplete="name" placeholder="例如：客服小王 / bmxxw03">
+    </div>
+    <div class="field">
+      <label for="customerServiceContact">客服联系方式</label>
+      <input id="customerServiceContact" type="text" placeholder="例如：微信 bmxxw03，可不填">
+    </div>
+    <div class="field">
       <label for="targetCompany">企业名称</label>
       <input id="targetCompany" type="text" autocomplete="organization" placeholder="例如：成都顺威恒源网络科技有限公司">
     </div>
@@ -99,6 +139,15 @@
       <input id="amount" type="text" inputmode="decimal" placeholder="例如：800 元">
     </div>
     <div class="field">
+      <label for="paymentQr">本次收款二维码</label>
+      <input id="paymentQr" type="file" accept="image/png,image/jpeg,image/webp">
+      <p class="hint">上传后，该付款链接会显示这个二维码；不上传则使用平台默认收款码。支持 PNG/JPG/WEBP，最大 3MB。</p>
+      <div class="qr-preview" id="qrPreview">
+        <img id="qrPreviewImage" alt="收款二维码预览">
+        <span id="qrPreviewName"></span>
+      </div>
+    </div>
+    <div class="field">
       <label for="note">备注</label>
       <textarea id="note" placeholder="例如：客户来源、沟通记录编号，可不填"></textarea>
     </div>
@@ -107,6 +156,8 @@
     <div class="result" id="resultBox">
       <div>付款链接：<strong id="paymentUrl"></strong></div>
       <div>有效至：<span id="expiresAt"></span></div>
+      <div>生成客服：<span id="resultService"></span></div>
+      <div>收款码：<span id="resultQrStatus"></span></div>
       <button class="copy-btn" id="copyBtn" type="button">复制链接</button>
       <textarea class="message-textarea" id="messageText" readonly></textarea>
       <button class="copy-btn" id="copyMessageBtn" type="button">复制整段话术</button>
@@ -116,9 +167,15 @@
 
   <script>
     const adminToken = document.getElementById('adminToken');
+    const customerServiceName = document.getElementById('customerServiceName');
+    const customerServiceContact = document.getElementById('customerServiceContact');
     const targetCompany = document.getElementById('targetCompany');
     const planName = document.getElementById('planName');
     const amount = document.getElementById('amount');
+    const paymentQr = document.getElementById('paymentQr');
+    const qrPreview = document.getElementById('qrPreview');
+    const qrPreviewImage = document.getElementById('qrPreviewImage');
+    const qrPreviewName = document.getElementById('qrPreviewName');
     const note = document.getElementById('note');
     const createBtn = document.getElementById('createBtn');
     const copyBtn = document.getElementById('copyBtn');
@@ -128,15 +185,20 @@
     const resultBox = document.getElementById('resultBox');
     const paymentUrl = document.getElementById('paymentUrl');
     const expiresAt = document.getElementById('expiresAt');
+    const resultService = document.getElementById('resultService');
+    const resultQrStatus = document.getElementById('resultQrStatus');
     const messageText = document.getElementById('messageText');
     let lastUrl = '';
+    let selectedQrData = null;
 
     adminToken.value = sessionStorage.getItem('cy_admin_token') || '';
+    customerServiceName.value = sessionStorage.getItem('cy_customer_service_name') || '';
+    customerServiceContact.value = sessionStorage.getItem('cy_customer_service_contact') || '';
 
     const messageTemplates = [
-      ({ company, url }) => `尊敬的${company}企业，您好！\n\n您可通过以下链接完成会员开通与续费：\n点击开通会员：${url}\n\n此链接安全可靠，30 分钟内有效。如有疑问，可随时联系成优网平台客服。`,
-      ({ company, url }) => `${company}企业您好！\n\n成优网会员开通/续费专属链接如下：\n${url}\n\n请在 30 分钟内完成查看与支付确认。链接为专属付款链接，请勿转发无关人员。如有疑问，可联系成优网平台客服。`,
-      ({ company, url }) => `尊敬的${company}企业，您好！\n\n请点击下方专属链接完成会员服务开通或续费：\n${url}\n\n该链接 30 分钟内有效，提交后自动失效。如需重新开通，请联系成优网平台客服。`,
+      ({ company, url, service }) => `尊敬的${company}企业，您好！\n\n您可通过以下链接完成会员开通与续费：\n点击开通会员：${url}\n\n此链接安全可靠，30 分钟内有效。如有疑问，可随时联系成优网平台客服${service}。`,
+      ({ company, url, service }) => `${company}企业您好！\n\n成优网会员开通/续费专属链接如下：\n${url}\n\n请在 30 分钟内完成查看与支付确认。链接为专属付款链接，请勿转发无关人员。如有疑问，可联系成优网平台客服${service}。`,
+      ({ company, url, service }) => `尊敬的${company}企业，您好！\n\n请点击下方专属链接完成会员服务开通或续费：\n${url}\n\n该链接 30 分钟内有效，提交后自动失效。如需重新开通，请联系成优网平台客服${service}。`,
       ({ company, url }) => `${company}企业您好，您的成优网会员开通链接已生成：\n\n点击开通会员：${url}\n\n链接有效期为 30 分钟，支付前请仔细阅读页面内《会员服务与使用须知》。`
     ];
 
@@ -146,7 +208,8 @@
 
     function buildMessage(url) {
       const template = messageTemplates[Math.floor(Math.random() * messageTemplates.length)];
-      return template({ company: getCompanyName(), url });
+      const service = customerServiceName.value.trim() ? `（${customerServiceName.value.trim()}）` : '';
+      return template({ company: getCompanyName(), url, service });
     }
 
     function refreshMessage() {
@@ -174,11 +237,76 @@
       });
     }
 
+    function detectImageType(file) {
+      if (file.type) return file.type;
+      if (/\.png$/i.test(file.name)) return 'image/png';
+      if (/\.jpe?g$/i.test(file.name)) return 'image/jpeg';
+      if (/\.webp$/i.test(file.name)) return 'image/webp';
+      return '';
+    }
+
+    function readImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = String(reader.result || '');
+          const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : '';
+          if (!base64) {
+            reject(new Error('收款二维码读取失败，请重新选择图片。'));
+            return;
+          }
+          resolve({
+            name: file.name,
+            size: file.size,
+            contentType: detectImageType(file),
+            dataUrl,
+            base64
+          });
+        };
+        reader.onerror = () => reject(new Error('收款二维码读取失败，请重新选择图片。'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    paymentQr.addEventListener('change', async () => {
+      selectedQrData = null;
+      qrPreview.style.display = 'none';
+      const file = paymentQr.files && paymentQr.files[0];
+      if (!file) return;
+
+      const contentType = detectImageType(file);
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(contentType)) {
+        showError('收款二维码仅支持 PNG、JPG、WEBP 图片。');
+        paymentQr.value = '';
+        return;
+      }
+      if (file.size > 3 * 1024 * 1024) {
+        showError('收款二维码图片不能超过 3MB。');
+        paymentQr.value = '';
+        return;
+      }
+
+      try {
+        selectedQrData = await readImageFile(file);
+        hideError();
+        qrPreviewImage.src = selectedQrData.dataUrl;
+        qrPreviewName.textContent = `${file.name} · ${Math.round(file.size / 1024)}KB`;
+        qrPreview.style.display = 'block';
+      } catch (error) {
+        showError(error.message || '收款二维码读取失败，请重新选择图片。');
+        paymentQr.value = '';
+      }
+    });
+
     createBtn.addEventListener('click', async () => {
       hideError();
       const token = adminToken.value.trim();
       if (!token) {
         showError('请输入管理口令。');
+        return;
+      }
+      if (!customerServiceName.value.trim()) {
+        showError('请输入客服姓名或编号，方便后续核对日志。');
         return;
       }
 
@@ -196,6 +324,14 @@
             targetCompany: targetCompany.value.trim(),
             planName: planName.value.trim(),
             amount: amount.value.trim(),
+            customerServiceName: customerServiceName.value.trim(),
+            customerServiceContact: customerServiceContact.value.trim(),
+            paymentQr: selectedQrData ? {
+              name: selectedQrData.name,
+              size: selectedQrData.size,
+              contentType: selectedQrData.contentType,
+              base64: selectedQrData.base64
+            } : null,
             note: note.value.trim()
           })
         });
@@ -205,9 +341,16 @@
         }
 
         sessionStorage.setItem('cy_admin_token', token);
+        sessionStorage.setItem('cy_customer_service_name', customerServiceName.value.trim());
+        sessionStorage.setItem('cy_customer_service_contact', customerServiceContact.value.trim());
         lastUrl = result.url;
         paymentUrl.textContent = result.url;
         expiresAt.textContent = formatDateTime(result.expiresAt);
+        resultService.textContent = [
+          customerServiceName.value.trim(),
+          customerServiceContact.value.trim()
+        ].filter(Boolean).join(' · ');
+        resultQrStatus.textContent = selectedQrData ? `已绑定专属收款码：${selectedQrData.name}` : '使用平台默认收款码';
         refreshMessage();
         resultBox.style.display = 'block';
       } catch (error) {

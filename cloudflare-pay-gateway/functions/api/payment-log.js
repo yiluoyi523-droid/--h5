@@ -80,6 +80,23 @@ export async function onRequestPost({ request, env }) {
       targetCompany: linkFile.value.targetCompany || "",
       amount: linkFile.value.amount || "",
       planName: linkFile.value.planName || "",
+      customerService: {
+        name: linkFile.value.customerService?.name || "",
+        contact: linkFile.value.customerService?.contact || ""
+      },
+      paymentQr: linkFile.value.paymentQr
+        ? {
+            path: linkFile.value.paymentQr.path || "",
+            contentType: linkFile.value.paymentQr.contentType || "",
+            originalName: linkFile.value.paymentQr.originalName || "",
+            htmlUrl: linkFile.value.paymentQr.htmlUrl || ""
+          }
+        : {
+            path: "默认平台收款码",
+            contentType: "",
+            originalName: "",
+            htmlUrl: ""
+          },
       createdAt: linkFile.value.createdAt,
       expiresAt: linkFile.value.expiresAt
     },

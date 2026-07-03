@@ -3,6 +3,7 @@ const DEFAULT_REPO = "chengyou-payment-logs";
 const DEFAULT_BRANCH = "main";
 const LINK_DIR = "payment-links";
 const LOG_DIR = "payment-logs";
+const QR_DIR = "payment-qrs";
 
 export function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -37,6 +38,16 @@ export function linkPath(token) {
   return `${LINK_DIR}/${cleanToken(token)}.json`;
 }
 
+export function qrPath(token, contentType = "image/png") {
+  const extMap = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/webp": "webp"
+  };
+  const ext = extMap[contentType] || "png";
+  return `${QR_DIR}/${cleanToken(token)}.${ext}`;
+}
+
 export function isAdminAuthorized(request, env) {
   const expected = env.ADMIN_TOKEN || "";
   const actual = request.headers.get("X-Admin-Token") || "";
@@ -61,12 +72,19 @@ export function linkStatus(link, now = new Date()) {
 }
 
 export function publicLink(link) {
+  const hasCustomQr = Boolean(link.paymentQr?.path);
   return {
     token: link.token,
     status: link.status,
     targetCompany: link.targetCompany || "",
     amount: link.amount || "",
     planName: link.planName || "",
+    customerService: {
+      name: link.customerService?.name || "",
+      contact: link.customerService?.contact || ""
+    },
+    hasCustomQr,
+    qrUrl: hasCustomQr ? `/api/payment-qr/${encodeURIComponent(link.token)}` : "",
     createdAt: link.createdAt,
     expiresAt: link.expiresAt,
     validMinutes: link.validMinutes || 30
@@ -172,6 +190,47 @@ export async function getJsonFile(env, path) {
   };
 }
 
+export async function getBase64File(env, path) {
+  if (!env.GITHUB_TOKEN) {
+    return { ok: false, status: 500, error: "缺少 GitHub Token 配置。" };
+  }
+
+  const { branch } = repoConfig(env);
+  const response = await fetch(`${contentUrl(env, path)}?ref=${encodeURIComponent(branch)}`, {
+    headers: githubHeaders(env)
+  });
+  const result = await response.json().catch(() => ({}));
+
+  if (response.status === 404) {
+    return { ok: true, exists: false };
+  }
+  if (!response.ok) {
+    return { ok: false, status: response.status, error: result.message || "读取 GitHub 文件失败。" };
+  }
+
+  let content = String(result.content || "").replace(/\n/g, "");
+  if (!content && result.git_url) {
+    const blobResponse = await fetch(result.git_url, { headers: githubHeaders(env) });
+    const blob = await blobResponse.json().catch(() => ({}));
+    if (!blobResponse.ok) {
+      return { ok: false, status: blobResponse.status, error: blob.message || "读取 GitHub 图片失败。" };
+    }
+    content = String(blob.content || "").replace(/\n/g, "");
+  }
+
+  if (!content) {
+    return { ok: false, status: 502, error: "GitHub 图片内容为空。" };
+  }
+
+  return {
+    ok: true,
+    exists: true,
+    sha: result.sha,
+    htmlUrl: result.html_url,
+    content
+  };
+}
+
 export async function putJsonFile(env, path, value, message, sha = "") {
   if (!env.GITHUB_TOKEN) {
     return { ok: false, status: 500, error: "缺少 GitHub Token 配置。" };
@@ -197,6 +256,43 @@ export async function putJsonFile(env, path, value, message, sha = "") {
       ok: false,
       status: response.status,
       error: result.message || "写入 GitHub 文件失败。"
+    };
+  }
+
+  return {
+    ok: true,
+    path,
+    sha: result.content?.sha || "",
+    commitSha: result.commit?.sha || "",
+    htmlUrl: result.content?.html_url || ""
+  };
+}
+
+export async function putBase64File(env, path, base64Content, message, sha = "") {
+  if (!env.GITHUB_TOKEN) {
+    return { ok: false, status: 500, error: "缺少 GitHub Token 配置。" };
+  }
+
+  const { branch } = repoConfig(env);
+  const body = {
+    message,
+    content: String(base64Content || "").replace(/^data:[^;]+;base64,/, "").replace(/\s/g, ""),
+    branch
+  };
+  if (sha) body.sha = sha;
+
+  const response = await fetch(contentUrl(env, path), {
+    method: "PUT",
+    headers: githubHeaders(env),
+    body: JSON.stringify(body)
+  });
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status,
+      error: result.message || "写入 GitHub 图片失败。"
     };
   }
 

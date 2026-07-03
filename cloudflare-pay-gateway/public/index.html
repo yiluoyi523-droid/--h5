@@ -426,6 +426,13 @@
       margin:0 auto;
       border-radius:6px;
     }
+    .qr-owner {
+      margin:10px 0 0;
+      color:#5b687a;
+      font-size:13px;
+      line-height:1.5;
+      text-align:center;
+    }
     .payment-guide {
       display:flex;
       align-items:center;
@@ -657,7 +664,8 @@
           <span class="pay-channel-badge">支付宝</span>
         </div>
         <div class="qr-card">
-          <img src="/assets/payment-qr.png" alt="微信支付宝收款二维码">
+          <img id="paymentQrImage" src="/assets/payment-qr.png" alt="微信支付宝收款二维码">
+          <p class="qr-owner" id="qrOwner"></p>
         </div>
         <div class="payment-guide">
           <span class="payment-guide-icon">i</span>
@@ -685,6 +693,8 @@
     const linkMeta = document.getElementById('linkMeta');
     const jobNotesLink = document.getElementById('jobNotesLink');
     const paymentKicker = document.getElementById('paymentKicker');
+    const paymentQrImage = document.getElementById('paymentQrImage');
+    const qrOwner = document.getElementById('qrOwner');
     const page1 = document.getElementById('page1');
     const page2 = document.getElementById('page2');
     const page3 = document.getElementById('page3');
@@ -776,6 +786,17 @@
         : '请支付对应会员套餐金额';
     }
 
+    function updatePaymentQr() {
+      const qrUrl = currentLink && currentLink.qrUrl ? currentLink.qrUrl : '/assets/payment-qr.png';
+      paymentQrImage.src = qrUrl;
+
+      const serviceName = currentLink?.customerService?.name || '';
+      const serviceContact = currentLink?.customerService?.contact || '';
+      const serviceText = [serviceName, serviceContact].filter(Boolean).join(' · ');
+      qrOwner.textContent = serviceText ? `收款客服：${serviceText}` : '';
+      qrOwner.style.display = serviceText ? 'block' : 'none';
+    }
+
     async function validatePaymentLink() {
       const token = getPaymentToken();
       if (!token) {
@@ -798,6 +819,7 @@
         sessionStorage.setItem('cy_payment_token', currentLink.token);
         sessionStorage.setItem('cy_payment_url', `/p/${currentLink.token}`);
         jobNotesLink.href = `/job-posting-notes.html?t=${encodeURIComponent(currentLink.token)}`;
+        updatePaymentQr();
         linkStatus.style.display = 'none';
         appContainer.style.display = 'block';
         updateCountdown();
