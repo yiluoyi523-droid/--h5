@@ -5,105 +5,171 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>成优网·套餐价格表及购买须知</title>
   <style>
-    /* ===== 原有样式保持不变 ===== */
-    body { font-family:"微软雅黑",sans-serif; background:#f5f5f5; margin:0; padding:0; position: relative; z-index: 0; }
+    :root {
+      --navy:#102a5c;
+      --blue:#2478ff;
+      --blue-deep:#155ad8;
+      --blue-soft:#eef6ff;
+      --line:#cfe1ff;
+      --text:#1d2939;
+      --muted:#667085;
+      --danger:#b42318;
+    }
+    * { box-sizing:border-box; }
+    body {
+      font-family:"Microsoft YaHei","微软雅黑",Arial,sans-serif;
+      background:linear-gradient(180deg,#dcebff 0%,#f3f9ff 42%,#fff 100%);
+      margin:0;
+      padding:0 0 24px;
+      min-height:100vh;
+      color:var(--text);
+      position:relative;
+      z-index:0;
+    }
 
-    .container { max-width:600px; margin:20px auto; background:#fff; padding:20px;
-                 border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.1); position: relative; z-index: 1; }
-    h1 { text-align:center; color:#333; margin-bottom:20px; }
-    .terms-title { color:#b42318; background:#fff7f5; border:1px solid #efc3bc;
-                   border-radius:8px; padding:12px 10px; font-size:22px; line-height:1.35;
-                   box-shadow:0 4px 12px rgba(180,35,24,0.08); }
+    .container {
+      width:100%;
+      max-width:430px;
+      margin:0 auto;
+      padding:18px 12px 24px;
+      background:transparent;
+      position:relative;
+      z-index:1;
+    }
+    h1 { text-align:center; color:var(--navy); margin:0 0 16px; font-size:25px; line-height:1.3; }
+    #page1 > h1, .terms-title, .payment-title {
+      margin:-18px -12px 16px;
+      padding:22px 14px 18px;
+      color:#fff;
+      text-align:left;
+      background:linear-gradient(135deg,#102a5c 0%,#17448e 54%,#2478ff 100%);
+      border:0;
+      border-radius:8px 8px 0 0;
+      box-shadow:none;
+    }
+    .terms-title { font-size:21px; line-height:1.35; }
     .terms-title::before { content:"!"; display:inline-flex; align-items:center; justify-content:center;
                            width:22px; height:22px; margin-right:7px; border-radius:50%;
-                           background:#b42318; color:#fff; font-size:15px; vertical-align:2px; }
+                           background:#fff; color:var(--blue-deep); font-size:15px; vertical-align:2px; }
     .page { display:none; }
-    .active { display:block; }
-    .img-preview { max-width:100%; margin-bottom:20px; }
-    .pay-btn, .next-btn, .secondary-btn { display:block; width:100%; padding:15px; text-align:center; background:#06c1ae; color:#fff;
-                           font-size:18px; border:none; border-radius:8px; cursor:pointer; }
-    .pay-btn:disabled, .next-btn:disabled { background:#ccc; cursor:not-allowed; }
-    .secondary-btn { margin-top:10px; color:#06c1ae; background:#eefaf8; border:1px solid #06c1ae; font-size:16px; }
+    .active {
+      display:block;
+      padding:18px 12px 14px;
+      background:rgba(255,255,255,0.96);
+      border:1px solid rgba(191,215,249,0.95);
+      border-radius:8px;
+      box-shadow:0 16px 36px rgba(32,89,171,0.16);
+      overflow:hidden;
+    }
+    .img-preview {
+      display:block;
+      width:100%;
+      max-width:100%;
+      margin:0 0 18px;
+      background:#fff;
+      border:1px solid #d8e7ff;
+      border-radius:8px;
+      box-shadow:0 8px 22px rgba(16,42,92,0.10);
+    }
+    .pay-btn, .next-btn, .secondary-btn {
+      display:block;
+      width:100%;
+      padding:15px;
+      text-align:center;
+      background:linear-gradient(135deg,#2b8dff 0%,#1f6dff 100%);
+      color:#fff;
+      font-size:18px;
+      font-weight:700;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      box-shadow:0 10px 20px rgba(31,109,255,0.22);
+    }
+    .pay-btn:disabled, .next-btn:disabled {
+      background:#c9d5e8;
+      box-shadow:none;
+      color:#fff;
+      cursor:not-allowed;
+    }
+    .secondary-btn { margin-top:10px; color:#1f6dff; background:#eef6ff; border:1px solid #b9d5ff; font-size:16px; box-shadow:none; }
     .doc-link { display:block; width:100%; box-sizing:border-box; padding:13px 15px; margin:0 0 12px;
-                text-align:center; color:#06c1ae; background:#eefaf8; border:1px solid #06c1ae;
+                text-align:center; color:#155ad8; background:linear-gradient(180deg,#f5faff 0%,#eaf4ff 100%); border:1px solid #9cc7ff;
                 border-radius:8px; text-decoration:none; font-size:16px; font-weight:600; }
-    .contract { max-height:420px; overflow-y:auto; border:1px solid #e3e3e3; padding:16px;
-                background:#fafafa; line-height:1.75; margin-bottom:20px; color:#333;
+    .contract { max-height:420px; overflow-y:auto; border:1px solid #d8e7ff; padding:16px;
+                background:linear-gradient(180deg,#fbfdff 0%,#f5f9ff 100%); line-height:1.75; margin-bottom:20px; color:#344054;
                 font-size:15px; border-radius:8px; }
-    .contract h2 { font-size:18px; line-height:1.45; margin:0 0 10px; text-align:center; color:#222; }
-    .contract h3 { font-size:16px; line-height:1.45; margin:18px 0 8px; color:#06a796; }
+    .contract h2 { font-size:18px; line-height:1.45; margin:0 0 10px; text-align:center; color:var(--navy); }
+    .contract h3 { font-size:16px; line-height:1.45; margin:18px 0 8px; color:#155ad8; }
     .contract p { margin:8px 0; }
     .contract ol, .contract ul { margin:8px 0 12px; padding-left:22px; }
     .contract li { margin:5px 0; }
-    .contract .intro { background:#eefaf8; border:1px solid #b9eee8; border-radius:8px; padding:10px 12px; margin:0 0 14px; }
+    .contract .intro { background:#eef6ff; border:1px solid #c8ddff; border-radius:8px; padding:10px 12px; margin:0 0 14px; }
     .contract .note { color:#555; }
     .fee-table { width:100%; border-collapse:collapse; margin:10px 0 12px; background:#fff; font-size:14px; }
-    .fee-table th, .fee-table td { border:1px solid #e1e1e1; padding:8px; text-align:left; }
-    .fee-table th { background:#eefaf8; color:#333; }
+    .fee-table th, .fee-table td { border:1px solid #d8e7ff; padding:8px; text-align:left; }
+    .fee-table th { background:#eef6ff; color:var(--navy); }
     .read-guide { display:none; align-items:center; gap:10px; margin:-8px 0 12px; }
-    .read-guide-bar { flex:1; height:6px; border-radius:999px; background:#f3dfdc; overflow:hidden; }
-    .read-guide-progress { display:block; width:0%; height:100%; background:#b42318; border-radius:999px;
+    .read-guide-bar { flex:1; height:6px; border-radius:999px; background:#dbeaff; overflow:hidden; }
+    .read-guide-progress { display:block; width:0%; height:100%; background:linear-gradient(90deg,#38bdf8,#2478ff); border-radius:999px;
                            transition:width 0.2s ease; }
-    .read-guide-button { width:36px; height:36px; flex:0 0 36px; position:relative; border:1px solid #efc3bc;
-                         border-radius:50%; background:#fff7f5; cursor:pointer; }
+    .read-guide-button { width:36px; height:36px; flex:0 0 36px; position:relative; border:1px solid #b9d5ff;
+                         border-radius:50%; background:#eef6ff; cursor:pointer; }
     .read-guide-button::before { content:""; position:absolute; left:50%; top:46%; width:9px; height:9px;
-                                 border-right:2px solid #b42318; border-bottom:2px solid #b42318;
+                                 border-right:2px solid #155ad8; border-bottom:2px solid #155ad8;
                                  transform:translate(-50%,-50%) rotate(45deg); }
-    .read-guide-button.complete::before { width:14px; height:7px; top:48%; border-right:2px solid #06a796;
-                                          border-bottom:2px solid #06a796; transform:translate(-50%,-50%) rotate(35deg); }
-    .open-form { margin:0 0 18px; padding:14px; background:#fbfbfb; border:1px solid #e7e7e7; border-radius:8px; }
-    .open-form-title { margin:0 0 12px; font-size:16px; line-height:1.4; color:#333; font-weight:700; }
+    .read-guide-button.complete::before { width:14px; height:7px; top:48%; border-right:2px solid #17a66b;
+                                          border-bottom:2px solid #17a66b; transform:translate(-50%,-50%) rotate(35deg); }
+    .open-form { margin:0 0 18px; padding:15px; background:linear-gradient(180deg,#fbfdff 0%,#f3f8ff 100%); border:1px solid #d8e7ff; border-radius:8px; }
+    .open-form-title { margin:0 0 12px; font-size:16px; line-height:1.4; color:var(--navy); font-weight:700; }
     .form-field { margin-bottom:12px; }
     .form-field:last-child { margin-bottom:0; }
-    .form-field label { display:block; margin-bottom:6px; color:#444; font-size:14px; font-weight:600; }
-    .form-field label::after { content:" *"; color:#b42318; }
-    .form-field input { width:100%; box-sizing:border-box; padding:12px 11px; border:1px solid #d8d8d8;
+    .form-field label { display:block; margin-bottom:6px; color:#344054; font-size:14px; font-weight:600; }
+    .form-field label::after { content:" *"; color:var(--danger); }
+    .form-field input { width:100%; box-sizing:border-box; padding:12px 11px; border:1px solid #c7d7ee;
                         border-radius:8px; background:#fff; color:#222; font-size:16px; outline:none; }
-    .form-field input:focus { border-color:#06c1ae; box-shadow:0 0 0 3px rgba(6,193,174,0.12); }
+    .form-field input:focus { border-color:#2478ff; box-shadow:0 0 0 3px rgba(36,120,255,0.13); }
     .form-field input.invalid { border-color:#d92d20; background:#fffafa; }
     .checkbox-container { display:flex; align-items:center; margin-bottom:20px; }
     .checkbox-container input { margin-right:10px;width:18px;height:18px; }
-    .payment-title { color:#1267d8; margin-bottom:12px; }
-    .payment-panel { padding:16px; background:#f8fbff; border:1px solid #d8e7ff; border-radius:8px; text-align:center; }
-    .payment-kicker { margin:0 0 10px; color:#333; font-size:16px; line-height:1.6; font-weight:700; }
+    .payment-title { margin-bottom:12px; }
+    .payment-panel { padding:0; background:transparent; border:0; border-radius:0; text-align:center; }
+    .payment-kicker { margin:0 0 12px; padding:11px 12px; color:var(--navy); font-size:16px; line-height:1.6; font-weight:700;
+                      background:#eef6ff; border:1px solid #d8e7ff; border-radius:8px; }
     .pay-channel-row { display:flex; justify-content:center; gap:8px; margin:0 0 14px; }
-    .pay-channel-badge { padding:5px 10px; border-radius:999px; background:#fff; border:1px solid #d8e7ff;
-                         color:#1267d8; font-size:13px; font-weight:700; }
-    .qr-card { display:block; padding:10px; background:#fff; border:1px solid #d8e7ff; border-radius:8px;
-               box-shadow:0 6px 18px rgba(18,103,216,0.12); }
+    .pay-channel-badge { padding:5px 10px; border-radius:999px; background:#fff; border:1px solid #b9d5ff;
+                         color:#155ad8; font-size:13px; font-weight:700; }
+    .qr-card { display:block; padding:12px; background:#fff; border:1px solid #c8ddff; border-radius:8px;
+               box-shadow:0 12px 26px rgba(18,103,216,0.16); }
     .qr-card img { width:100%; max-width:340px; height:auto; display:block; margin:0 auto; border-radius:6px; }
     .payment-guide { display:flex; align-items:center; justify-content:center; gap:8px; margin:14px 0 16px;
-                     padding:10px 12px; background:#fff7f5; border:1px solid #efc3bc; border-radius:8px;
-                     color:#7a271a; font-size:14px; line-height:1.5; }
+                     padding:10px 12px; background:#eef6ff; border:1px solid #c8ddff; border-radius:8px;
+                     color:#23466f; font-size:14px; line-height:1.5; }
     .payment-guide-icon { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px;
-                          flex:0 0 22px; border-radius:50%; background:#b42318; color:#fff; font-weight:700; }
+                          flex:0 0 22px; border-radius:50%; background:#2478ff; color:#fff; font-weight:700; }
     .success-message { display:none; text-align:center; font-size:18px; line-height:1.7; color:#067647;
                        margin-top:14px; padding:12px; background:#ecfdf3; border:1px solid #abefc6; border-radius:8px; }
-    .status-screen { max-width:600px; margin:20px auto; background:#fff; padding:22px 20px;
-                     border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.1); position:relative; z-index:1;
+    .status-screen { max-width:430px; margin:18px auto; background:rgba(255,255,255,0.96); padding:22px 20px;
+                     border:1px solid #cfe1ff; border-radius:8px; box-shadow:0 16px 36px rgba(32,89,171,0.16); position:relative; z-index:1;
                      text-align:center; color:#333; }
-    .status-screen h1 { margin:0 0 12px; font-size:22px; color:#b42318; }
-    .status-screen p { margin:8px 0; line-height:1.7; color:#555; }
-    .link-meta { margin:0 0 14px; padding:12px; background:#f8fbff; border:1px solid #d8e7ff;
-                 border-radius:8px; color:#344054; font-size:14px; line-height:1.6; }
-    .link-meta strong { color:#1267d8; }
-    .countdown { color:#b42318; font-weight:700; }
+    .status-screen h1 { margin:0 0 12px; font-size:22px; color:var(--navy); }
+    .status-screen p { margin:8px 0; line-height:1.7; color:var(--muted); }
+    .link-meta { margin:0 0 14px; padding:12px; background:linear-gradient(180deg,#f8fbff 0%,#eef6ff 100%); border:1px solid #c8ddff;
+                 border-radius:8px; color:#344054; font-size:14px; line-height:1.6; box-shadow:0 6px 16px rgba(36,120,255,0.08); }
+    .link-meta strong { color:#155ad8; }
+    .countdown { color:var(--danger); font-weight:700; }
 
-    /* ===== 新增水印样式 ===== */
     body::before {
-      content: "成优网";
+      content: "";
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
-      height: 100%;
+      height: 170px;
       z-index: 0;
       pointer-events: none;
       display: block;
-      color: rgba(0,0,0,0.15);
-      font-size: 60px;
-      transform: rotate(-30deg);
-      white-space: pre-wrap;
+      background:linear-gradient(135deg,#102a5c 0%,#17448e 52%,#2478ff 100%);
+      transform:none;
     }
   </style>
 </head>
