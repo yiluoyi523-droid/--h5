@@ -1,6 +1,8 @@
 name = "chengyou-payment-log"
 main = "payment-log-worker.js"
 compatibility_date = "2026-07-03"
+workers_dev = true
+preview_urls = false
 
 [vars]
 GITHUB_OWNER = "yiluoyi523-droid"
