@@ -4,6 +4,8 @@ const DEFAULT_BRANCH = "main";
 const LINK_DIR = "payment-links";
 const LOG_DIR = "payment-logs";
 const QR_DIR = "payment-qrs";
+const CERTIFICATE_DIR = "payment-certificates";
+const EVIDENCE_DIR = "payment-evidence";
 
 export function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -115,11 +117,23 @@ function chinaParts(now) {
 }
 
 export function buildLogPath(companyName, phone, token, now) {
+  return buildEvidencePaths(companyName, phone, token, now).logPath;
+}
+
+export function buildEvidencePaths(companyName, phone, token, now) {
   const { yyyy, mm, dd, hh, mi, ss } = chinaParts(now);
   const date = `${yyyy}-${mm}-${dd}`;
   const stamp = `${yyyy}${mm}${dd}-${hh}${mi}${ss}`;
   const phoneTail = cleanText(phone, 11).slice(-4) || "0000";
-  return `${LOG_DIR}/${date}/${stamp}-${cleanToken(token)}-${compactName(companyName)}-${phoneTail}.json`;
+  const baseName = `${stamp}-${cleanToken(token)}-${compactName(companyName)}-${phoneTail}`;
+  return {
+    date,
+    stamp,
+    baseName,
+    logPath: `${LOG_DIR}/${date}/${baseName}.json`,
+    certificatePath: `${CERTIFICATE_DIR}/${date}/${baseName}.pdf`,
+    evidenceIndexPath: `${EVIDENCE_DIR}/${date}/${baseName}.json`
+  };
 }
 
 function repoConfig(env) {
@@ -152,6 +166,34 @@ function textToBase64(text) {
     binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  const binary = atob(String(value || "").replace(/^data:[^;]+;base64,/, "").replace(/\s/g, ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function bytesToHex(bytes) {
+  return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export function base64ByteLength(value) {
+  return base64ToBytes(value).byteLength;
+}
+
+export async function sha256Text(text) {
+  const bytes = new TextEncoder().encode(String(text || ""));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return bytesToHex(new Uint8Array(digest));
+}
+
+export async function sha256Base64(value) {
+  const digest = await crypto.subtle.digest("SHA-256", base64ToBytes(value));
+  return bytesToHex(new Uint8Array(digest));
 }
 
 function base64ToText(value) {

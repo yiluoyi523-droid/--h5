@@ -796,6 +796,258 @@
       qrOwner.style.display = serviceText ? 'block' : 'none';
     }
 
+    function compactDateForId(date) {
+      const pad = (value) => String(value).padStart(2, '0');
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+    }
+
+    function dataUrlToBytes(dataUrl) {
+      const base64 = String(dataUrl || '').split(',')[1] || '';
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+      }
+      return btoa(binary);
+    }
+
+    function concatBytes(chunks) {
+      const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const result = new Uint8Array(total);
+      let offset = 0;
+      chunks.forEach((chunk) => {
+        result.set(chunk, offset);
+        offset += chunk.length;
+      });
+      return result;
+    }
+
+    function textBytes(text) {
+      return new TextEncoder().encode(text);
+    }
+
+    function buildPdfFromJpegs(jpegDataUrls, imageWidth, imageHeight) {
+      const pageWidth = 595.28;
+      const pageHeight = 841.89;
+      const objects = [];
+      let nextObjectId = 3;
+      const addObject = (bodyChunks) => {
+        const id = nextObjectId;
+        nextObjectId += 1;
+        objects.push({ id, bodyChunks });
+        return id;
+      };
+
+      const pageIds = [];
+      const imageIds = [];
+      jpegDataUrls.forEach((dataUrl, index) => {
+        const imageBytes = dataUrlToBytes(dataUrl);
+        const imageId = addObject([
+          textBytes(`<< /Type /XObject /Subtype /Image /Width ${imageWidth} /Height ${imageHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`),
+          imageBytes,
+          textBytes('\nendstream')
+        ]);
+        imageIds.push(imageId);
+
+        const content = `q\n${pageWidth.toFixed(2)} 0 0 ${pageHeight.toFixed(2)} 0 0 cm\n/Im${index + 1} Do\nQ\n`;
+        const contentId = addObject([
+          textBytes(`<< /Length ${content.length} >>\nstream\n${content}endstream`)
+        ]);
+        const pageId = addObject([
+          textBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth.toFixed(2)} ${pageHeight.toFixed(2)}] /Resources << /XObject << /Im${index + 1} ${imageId} 0 R >> >> /Contents ${contentId} 0 R >>`)
+        ]);
+        pageIds.push(pageId);
+      });
+
+      objects.push({ id: 1, bodyChunks: [textBytes('<< /Type /Catalog /Pages 2 0 R >>')] });
+      objects.unshift({
+        id: 2,
+        bodyChunks: [textBytes(`<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`)]
+      });
+      objects.sort((a, b) => a.id - b.id);
+
+      const chunks = [textBytes('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n')];
+      const offsets = [0];
+      objects.forEach((object) => {
+        offsets[object.id] = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+        chunks.push(textBytes(`${object.id} 0 obj\n`));
+        object.bodyChunks.forEach((chunk) => chunks.push(chunk));
+        chunks.push(textBytes('\nendobj\n'));
+      });
+
+      const xrefOffset = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const maxId = Math.max(...objects.map((object) => object.id));
+      let xref = `xref\n0 ${maxId + 1}\n0000000000 65535 f \n`;
+      for (let id = 1; id <= maxId; id += 1) {
+        xref += `${String(offsets[id] || 0).padStart(10, '0')} 00000 n \n`;
+      }
+      xref += `trailer\n<< /Size ${maxId + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+      chunks.push(textBytes(xref));
+      return concatBytes(chunks);
+    }
+
+    function buildCertificatePdf() {
+      const generatedAt = new Date();
+      const token = currentLink ? currentLink.token : getPaymentToken();
+      const documentNumber = `CY-${token}-${compactDateForId(generatedAt)}`;
+      const termsText = refundContent.innerText.trim();
+      const serviceName = currentLink?.customerService?.name || '';
+      const serviceContact = currentLink?.customerService?.contact || '';
+      const serviceText = [serviceName, serviceContact].filter(Boolean).join(' / ') || '未填写';
+      const rows = [
+        ['文档编号', documentNumber],
+        ['企业填写名称', companyName.value.trim()],
+        ['开通手机号', openPhone.value.trim()],
+        ['联系人姓名', contactName.value.trim()],
+        ['付款链接短码', token],
+        ['付款页面', window.location.href],
+        ['套餐名称', currentLink?.planName || '未填写'],
+        ['应付金额', currentLink?.amount || '未填写'],
+        ['客服信息', serviceText],
+        ['条款版本', '2026-07-03'],
+        ['客户端确认时间', generatedAt.toLocaleString('zh-CN')],
+        ['确认动作', '已勾选同意《会员服务与使用须知》，并点击“我已支付”。'],
+        ['设备环境', navigator.userAgent]
+      ];
+
+      const width = 900;
+      const height = 1273;
+      const margin = 58;
+      const contentWidth = width - margin * 2;
+      const pages = [];
+      let canvas;
+      let ctx;
+      let y = margin;
+      let pageNo = 0;
+
+      function newPage() {
+        canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = '#0b8f83';
+        ctx.fillRect(0, 0, width, 14);
+        ctx.fillStyle = '#effaf8';
+        ctx.fillRect(0, 14, width, 34);
+        y = margin + 12;
+        pageNo += 1;
+      }
+
+      function finishPage() {
+        ctx.fillStyle = '#697586';
+        ctx.font = '22px "Microsoft YaHei", Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`第 ${pageNo} 页`, width / 2, height - 28);
+        ctx.textAlign = 'left';
+        pages.push(canvas.toDataURL('image/jpeg', 0.86));
+      }
+
+      function ensureSpace(space) {
+        if (y + space <= height - margin) return;
+        finishPage();
+        newPage();
+      }
+
+      function wrapText(text, maxWidth) {
+        const result = [];
+        String(text || '').split(/\n/).forEach((paragraph) => {
+          const trimmed = paragraph.trim();
+          if (!trimmed) {
+            result.push('');
+            return;
+          }
+          let line = '';
+          Array.from(trimmed).forEach((char) => {
+            const testLine = line + char;
+            if (ctx.measureText(testLine).width > maxWidth && line) {
+              result.push(line);
+              line = char;
+            } else {
+              line = testLine;
+            }
+          });
+          if (line) result.push(line);
+        });
+        return result;
+      }
+
+      function drawParagraph(text, options = {}) {
+        const size = options.size || 24;
+        const lineHeight = options.lineHeight || Math.round(size * 1.62);
+        const color = options.color || '#172033';
+        const weight = options.weight || '400';
+        const indent = options.indent || 0;
+        ctx.font = `${weight} ${size}px "Microsoft YaHei", Arial, sans-serif`;
+        ctx.fillStyle = color;
+        ctx.textAlign = options.align || 'left';
+        const maxWidth = contentWidth - indent;
+        const lines = wrapText(text, maxWidth);
+        lines.forEach((line) => {
+          ensureSpace(lineHeight);
+          if (!line) {
+            y += Math.round(lineHeight * 0.55);
+            return;
+          }
+          const x = ctx.textAlign === 'center' ? width / 2 : margin + indent;
+          ctx.fillText(line, x, y);
+          y += lineHeight;
+        });
+        ctx.textAlign = 'left';
+      }
+
+      function drawHeading(text) {
+        ensureSpace(58);
+        y += 12;
+        ctx.fillStyle = '#0b8f83';
+        ctx.fillRect(margin, y - 26, 8, 36);
+        drawParagraph(text, { size: 28, weight: '700', color: '#0f766e', indent: 22, lineHeight: 42 });
+        y += 8;
+      }
+
+      newPage();
+      drawParagraph('成优网会员服务开通及付款确认记录', { size: 36, weight: '700', color: '#10233f', align: 'center', lineHeight: 54 });
+      drawParagraph('本确认记录用于留存企业会员服务开通、条款阅读同意与付款确认动作。实际到账情况以平台微信/支付宝收款记录为准。', { size: 22, color: '#475467', lineHeight: 36 });
+      y += 10;
+
+      drawHeading('一、企业与付款信息');
+      rows.forEach(([label, value]) => {
+        drawParagraph(`${label}：${value || '未填写'}`, { size: 23, lineHeight: 36 });
+      });
+
+      drawHeading('二、确认声明');
+      drawParagraph('用户在本付款页面填写公司名称、开通手机号及姓名后，已勾选“我已阅读并同意以下条款”，并点击“我已支付”。该操作表示用户确认已阅读、理解并同意《会员服务与使用须知》，并确认按照页面提示完成对应会员金额的支付操作。', { size: 23, lineHeight: 38 });
+      drawParagraph('本记录由系统自动生成并保存至平台私有证据仓库，同时保存原始 JSON 日志、PDF 文件及 SHA-256 哈希，用于后续核对与争议处理。', { size: 23, lineHeight: 38 });
+
+      drawHeading('三、会员服务与使用须知全文');
+      drawParagraph(termsText, { size: 21, lineHeight: 34 });
+
+      finishPage();
+      const pdfBytes = buildPdfFromJpegs(pages, width, height);
+      return {
+        documentNumber,
+        termsText,
+        pdf: {
+          fileName: `${documentNumber}.pdf`,
+          contentType: 'application/pdf',
+          base64: bytesToBase64(pdfBytes),
+          size: pdfBytes.length,
+          pages: pages.length,
+          generatedAtClient: generatedAt.toISOString()
+        }
+      };
+    }
+
     async function validatePaymentLink() {
       const token = getPaymentToken();
       if (!token) {
@@ -833,6 +1085,7 @@
         return { ok: false, skipped: true };
       }
 
+      const certificate = buildCertificatePdf();
       const payload = {
         companyName: companyName.value.trim(),
         openPhone: openPhone.value.trim(),
@@ -840,6 +1093,9 @@
         token: currentLink ? currentLink.token : getPaymentToken(),
         agreedTerms: agreeCheckbox.checked,
         paidConfirmed: true,
+        clientDocumentNumber: certificate.documentNumber,
+        termsText: certificate.termsText,
+        certificatePdf: certificate.pdf,
         submittedAtClient: new Date().toISOString(),
         pageUrl: window.location.href,
         userAgent: navigator.userAgent
