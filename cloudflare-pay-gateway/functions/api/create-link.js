@@ -31,6 +31,7 @@ export async function onRequestPost({ request, env }) {
     token: "",
     status: "active",
     validMinutes: 30,
+    targetCompany: cleanText(payload.targetCompany, 120),
     amount: cleanText(payload.amount, 40),
     planName: cleanText(payload.planName, 80),
     note: cleanText(payload.note, 200),

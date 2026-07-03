@@ -64,6 +64,7 @@ export function publicLink(link) {
   return {
     token: link.token,
     status: link.status,
+    targetCompany: link.targetCompany || "",
     amount: link.amount || "",
     planName: link.planName || "",
     createdAt: link.createdAt,

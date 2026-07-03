@@ -322,6 +322,15 @@
       });
     }
 
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function getRemainingMs() {
       if (!currentLink) return 0;
       return new Date(currentLink.expiresAt).getTime() - Date.now();
@@ -343,9 +352,10 @@
 
       const minutes = Math.floor(remaining / 60000);
       const seconds = Math.floor((remaining % 60000) / 1000);
-      const amountText = currentLink.amount ? `本次应付：<strong>${currentLink.amount}</strong><br>` : '';
-      const planText = currentLink.planName ? `套餐：${currentLink.planName}<br>` : '';
-      linkMeta.innerHTML = `${amountText}${planText}有效至：${formatDateTime(currentLink.expiresAt)}<br>剩余时间：<span class="countdown">${minutes}分${String(seconds).padStart(2, '0')}秒</span>`;
+      const companyText = currentLink.targetCompany ? `对应企业：${escapeHtml(currentLink.targetCompany)}<br>` : '';
+      const amountText = currentLink.amount ? `本次应付：<strong>${escapeHtml(currentLink.amount)}</strong><br>` : '';
+      const planText = currentLink.planName ? `套餐：${escapeHtml(currentLink.planName)}<br>` : '';
+      linkMeta.innerHTML = `${companyText}${amountText}${planText}有效至：${formatDateTime(currentLink.expiresAt)}<br>剩余时间：<span class="countdown">${minutes}分${String(seconds).padStart(2, '0')}秒</span>`;
       paymentKicker.textContent = currentLink.amount
         ? `请支付对应会员套餐金额：${currentLink.amount}`
         : '请支付对应会员套餐金额';

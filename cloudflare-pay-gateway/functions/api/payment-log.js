@@ -77,6 +77,7 @@ export async function onRequestPost({ request, env }) {
     termsVersion: "2026-07-03",
     paymentLink: {
       token: linkFile.value.token,
+      targetCompany: linkFile.value.targetCompany || "",
       amount: linkFile.value.amount || "",
       planName: linkFile.value.planName || "",
       createdAt: linkFile.value.createdAt,

@@ -19,7 +19,7 @@
     }
     .panel {
       width:100%;
-      max-width:520px;
+      max-width:560px;
       background:#fff;
       border:1px solid #e5e7eb;
       border-radius:10px;
@@ -39,6 +39,7 @@
       background:#fff;
     }
     textarea { min-height:76px; resize:vertical; }
+    .message-textarea { min-height:170px; margin-top:10px; line-height:1.7; }
     input:focus, textarea:focus { border-color:#06c1ae; box-shadow:0 0 0 3px rgba(6,193,174,0.14); }
     button {
       width:100%;
@@ -65,6 +66,7 @@
     }
     .result strong { color:#1267d8; }
     .copy-btn { margin-top:10px; background:#1267d8; }
+    .plain-btn { margin-top:10px; background:#eefaf8; color:#047c70; border:1px solid #06c1ae; }
     .error {
       display:none;
       margin-top:14px;
@@ -85,6 +87,10 @@
       <input id="adminToken" type="password" autocomplete="current-password" placeholder="请输入管理口令">
     </div>
     <div class="field">
+      <label for="targetCompany">企业名称</label>
+      <input id="targetCompany" type="text" autocomplete="organization" placeholder="例如：成都顺威恒源网络科技有限公司">
+    </div>
+    <div class="field">
       <label for="planName">套餐名称</label>
       <input id="planName" type="text" placeholder="例如：招聘会员套餐">
     </div>
@@ -102,22 +108,51 @@
       <div>付款链接：<strong id="paymentUrl"></strong></div>
       <div>有效至：<span id="expiresAt"></span></div>
       <button class="copy-btn" id="copyBtn" type="button">复制链接</button>
+      <textarea class="message-textarea" id="messageText" readonly></textarea>
+      <button class="copy-btn" id="copyMessageBtn" type="button">复制整段话术</button>
+      <button class="plain-btn" id="refreshMessageBtn" type="button">换一句话术</button>
     </div>
   </main>
 
   <script>
     const adminToken = document.getElementById('adminToken');
+    const targetCompany = document.getElementById('targetCompany');
     const planName = document.getElementById('planName');
     const amount = document.getElementById('amount');
     const note = document.getElementById('note');
     const createBtn = document.getElementById('createBtn');
     const copyBtn = document.getElementById('copyBtn');
+    const copyMessageBtn = document.getElementById('copyMessageBtn');
+    const refreshMessageBtn = document.getElementById('refreshMessageBtn');
     const errorBox = document.getElementById('errorBox');
     const resultBox = document.getElementById('resultBox');
     const paymentUrl = document.getElementById('paymentUrl');
     const expiresAt = document.getElementById('expiresAt');
+    const messageText = document.getElementById('messageText');
+    let lastUrl = '';
 
     adminToken.value = sessionStorage.getItem('cy_admin_token') || '';
+
+    const messageTemplates = [
+      ({ company, url }) => `尊敬的${company}企业，您好！\n\n您可通过以下链接完成会员开通与续费：\n点击开通会员：${url}\n\n此链接安全可靠，30 分钟内有效。如有疑问，可随时联系成优网平台客服。`,
+      ({ company, url }) => `${company}企业您好！\n\n成优网会员开通/续费专属链接如下：\n${url}\n\n请在 30 分钟内完成查看与支付确认。链接为专属付款链接，请勿转发无关人员。如有疑问，可联系成优网平台客服。`,
+      ({ company, url }) => `尊敬的${company}企业，您好！\n\n请点击下方专属链接完成会员服务开通或续费：\n${url}\n\n该链接 30 分钟内有效，提交后自动失效。如需重新开通，请联系成优网平台客服。`,
+      ({ company, url }) => `${company}企业您好，您的成优网会员开通链接已生成：\n\n点击开通会员：${url}\n\n链接有效期为 30 分钟，支付前请仔细阅读页面内《会员服务与使用须知》。`
+    ];
+
+    function getCompanyName() {
+      return targetCompany.value.trim() || '贵司';
+    }
+
+    function buildMessage(url) {
+      const template = messageTemplates[Math.floor(Math.random() * messageTemplates.length)];
+      return template({ company: getCompanyName(), url });
+    }
+
+    function refreshMessage() {
+      if (!lastUrl) return;
+      messageText.value = buildMessage(lastUrl);
+    }
 
     function showError(message) {
       errorBox.textContent = message;
@@ -158,6 +193,7 @@
             'X-Admin-Token': token
           },
           body: JSON.stringify({
+            targetCompany: targetCompany.value.trim(),
             planName: planName.value.trim(),
             amount: amount.value.trim(),
             note: note.value.trim()
@@ -169,8 +205,10 @@
         }
 
         sessionStorage.setItem('cy_admin_token', token);
+        lastUrl = result.url;
         paymentUrl.textContent = result.url;
         expiresAt.textContent = formatDateTime(result.expiresAt);
+        refreshMessage();
         resultBox.style.display = 'block';
       } catch (error) {
         showError(error.message || '生成失败，请稍后重试。');
@@ -186,6 +224,18 @@
       setTimeout(() => {
         copyBtn.textContent = '复制链接';
       }, 1600);
+    });
+
+    copyMessageBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(messageText.value);
+      copyMessageBtn.textContent = '整段话术已复制';
+      setTimeout(() => {
+        copyMessageBtn.textContent = '复制整段话术';
+      }, 1600);
+    });
+
+    refreshMessageBtn.addEventListener('click', () => {
+      refreshMessage();
     });
   </script>
 </body>
