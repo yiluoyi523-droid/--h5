@@ -1,3 +1,4 @@
 .wrangler/
 cloudflare-worker/.wrangler/
 cloudflare-pages-log/.wrangler/
+cloudflare-pay-gateway/.wrangler/

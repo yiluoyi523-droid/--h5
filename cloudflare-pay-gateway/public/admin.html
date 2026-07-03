@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>成优网付款链接生成</title>
+  <style>
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      min-height:100vh;
+      font-family:"Microsoft YaHei", Arial, sans-serif;
+      background:#f4f7fb;
+      color:#1f2937;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+    .panel {
+      width:100%;
+      max-width:520px;
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      box-shadow:0 12px 30px rgba(15,23,42,0.08);
+      padding:22px;
+    }
+    h1 { margin:0 0 16px; font-size:22px; text-align:center; color:#1267d8; }
+    .field { margin-bottom:14px; }
+    label { display:block; margin-bottom:7px; font-size:14px; font-weight:700; color:#374151; }
+    input, textarea {
+      width:100%;
+      padding:12px 11px;
+      border:1px solid #d1d5db;
+      border-radius:8px;
+      font-size:16px;
+      outline:none;
+      background:#fff;
+    }
+    textarea { min-height:76px; resize:vertical; }
+    input:focus, textarea:focus { border-color:#06c1ae; box-shadow:0 0 0 3px rgba(6,193,174,0.14); }
+    button {
+      width:100%;
+      border:0;
+      border-radius:8px;
+      padding:14px 12px;
+      background:#06c1ae;
+      color:#fff;
+      font-size:17px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    button:disabled { background:#98a2b3; cursor:not-allowed; }
+    .result {
+      display:none;
+      margin-top:16px;
+      padding:14px;
+      border-radius:8px;
+      background:#f8fbff;
+      border:1px solid #d8e7ff;
+      color:#344054;
+      line-height:1.6;
+      word-break:break-all;
+    }
+    .result strong { color:#1267d8; }
+    .copy-btn { margin-top:10px; background:#1267d8; }
+    .error {
+      display:none;
+      margin-top:14px;
+      padding:12px;
+      border-radius:8px;
+      background:#fff7f5;
+      border:1px solid #efc3bc;
+      color:#b42318;
+      line-height:1.6;
+    }
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <h1>成优网付款链接生成</h1>
+    <div class="field">
+      <label for="adminToken">管理口令</label>
+      <input id="adminToken" type="password" autocomplete="current-password" placeholder="请输入管理口令">
+    </div>
+    <div class="field">
+      <label for="planName">套餐名称</label>
+      <input id="planName" type="text" placeholder="例如：招聘会员套餐">
+    </div>
+    <div class="field">
+      <label for="amount">收款金额</label>
+      <input id="amount" type="text" inputmode="decimal" placeholder="例如：800 元">
+    </div>
+    <div class="field">
+      <label for="note">备注</label>
+      <textarea id="note" placeholder="例如：客户来源、沟通记录编号，可不填"></textarea>
+    </div>
+    <button id="createBtn">生成 30 分钟付款链接</button>
+    <div class="error" id="errorBox"></div>
+    <div class="result" id="resultBox">
+      <div>付款链接：<strong id="paymentUrl"></strong></div>
+      <div>有效至：<span id="expiresAt"></span></div>
+      <button class="copy-btn" id="copyBtn" type="button">复制链接</button>
+    </div>
+  </main>
+
+  <script>
+    const adminToken = document.getElementById('adminToken');
+    const planName = document.getElementById('planName');
+    const amount = document.getElementById('amount');
+    const note = document.getElementById('note');
+    const createBtn = document.getElementById('createBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const errorBox = document.getElementById('errorBox');
+    const resultBox = document.getElementById('resultBox');
+    const paymentUrl = document.getElementById('paymentUrl');
+    const expiresAt = document.getElementById('expiresAt');
+
+    adminToken.value = sessionStorage.getItem('cy_admin_token') || '';
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = 'block';
+      resultBox.style.display = 'none';
+    }
+
+    function hideError() {
+      errorBox.style.display = 'none';
+    }
+
+    function formatDateTime(value) {
+      return new Date(value).toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    createBtn.addEventListener('click', async () => {
+      hideError();
+      const token = adminToken.value.trim();
+      if (!token) {
+        showError('请输入管理口令。');
+        return;
+      }
+
+      createBtn.disabled = true;
+      createBtn.textContent = '正在生成...';
+
+      try {
+        const response = await fetch('/api/create-link', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Token': token
+          },
+          body: JSON.stringify({
+            planName: planName.value.trim(),
+            amount: amount.value.trim(),
+            note: note.value.trim()
+          })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.ok !== true) {
+          throw new Error(result.error || '生成失败，请稍后重试。');
+        }
+
+        sessionStorage.setItem('cy_admin_token', token);
+        paymentUrl.textContent = result.url;
+        expiresAt.textContent = formatDateTime(result.expiresAt);
+        resultBox.style.display = 'block';
+      } catch (error) {
+        showError(error.message || '生成失败，请稍后重试。');
+      } finally {
+        createBtn.disabled = false;
+        createBtn.textContent = '生成 30 分钟付款链接';
+      }
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(paymentUrl.textContent);
+      copyBtn.textContent = '已复制';
+      setTimeout(() => {
+        copyBtn.textContent = '复制链接';
+      }, 1600);
+    });
+  </script>
+</body>
+</html>

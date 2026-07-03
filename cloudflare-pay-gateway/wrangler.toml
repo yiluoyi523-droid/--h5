@@ -1,0 +1,9 @@
+name = "rpin-pay"
+pages_build_output_dir = "public"
+compatibility_date = "2026-07-03"
+
+[vars]
+GITHUB_OWNER = "yiluoyi523-droid"
+GITHUB_REPO = "chengyou-payment-logs"
+GITHUB_BRANCH = "main"
+PUBLIC_BASE_URL = "https://rpin-pay.pages.dev"
