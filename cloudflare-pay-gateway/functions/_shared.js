@@ -51,7 +51,7 @@ export function qrPath(token, contentType = "image/png") {
 export function isAdminAuthorized(request, env) {
   const expected = env.ADMIN_TOKEN || "";
   const actual = request.headers.get("X-Admin-Token") || "";
-  return expected.length >= 8 && actual === expected;
+  return expected.length > 0 && actual === expected;
 }
 
 export function getPublicBaseUrl(request, env) {
