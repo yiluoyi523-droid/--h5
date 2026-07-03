@@ -1,0 +1,8 @@
+name = "chengyou-payment-log"
+main = "payment-log-worker.js"
+compatibility_date = "2026-07-03"
+
+[vars]
+GITHUB_OWNER = "yiluoyi523-droid"
+GITHUB_REPO = "--h5"
+GITHUB_BRANCH = "main"
