@@ -1,0 +1,3 @@
+.wrangler/
+cloudflare-worker/.wrangler/
+cloudflare-pages-log/.wrangler/
