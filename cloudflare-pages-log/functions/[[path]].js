@@ -73,7 +73,7 @@ function validatePayload(payload) {
 
 async function writeLogToGitHub(env, path, log) {
   const owner = env.GITHUB_OWNER || "yiluoyi523-droid";
-  const repo = env.GITHUB_REPO || "--h5";
+  const repo = env.GITHUB_REPO || "chengyou-payment-logs";
   const branch = env.GITHUB_BRANCH || "main";
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path).replace(/%2F/g, "/")}`;
 

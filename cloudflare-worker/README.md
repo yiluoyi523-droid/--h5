@@ -1,6 +1,6 @@
 # 支付日志 Worker
 
-这个 Cloudflare Worker 用来接收网页上的“我已支付”点击记录，并把日志安全写入 GitHub 仓库的 `payment-logs/` 目录。
+这个 Cloudflare Worker 用来接收网页上的“我已支付”点击记录，并把日志安全写入私有 GitHub 仓库 `chengyou-payment-logs` 的 `payment-logs/` 目录。
 
 免费方案：Cloudflare Worker 免费额度足够这个页面使用，不需要自己买服务器。
 
