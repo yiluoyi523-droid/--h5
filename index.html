@@ -11,6 +11,12 @@
     .container { max-width:600px; margin:20px auto; background:#fff; padding:20px;
                  border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.1); position: relative; z-index: 1; }
     h1 { text-align:center; color:#333; margin-bottom:20px; }
+    .terms-title { color:#b42318; background:#fff7f5; border:1px solid #efc3bc;
+                   border-radius:8px; padding:12px 10px; font-size:22px; line-height:1.35;
+                   box-shadow:0 4px 12px rgba(180,35,24,0.08); }
+    .terms-title::before { content:"!"; display:inline-flex; align-items:center; justify-content:center;
+                           width:22px; height:22px; margin-right:7px; border-radius:50%;
+                           background:#b42318; color:#fff; font-size:15px; vertical-align:2px; }
     .page { display:none; }
     .active { display:block; }
     .img-preview { max-width:100%; margin-bottom:20px; }
@@ -33,6 +39,17 @@
     .fee-table { width:100%; border-collapse:collapse; margin:10px 0 12px; background:#fff; font-size:14px; }
     .fee-table th, .fee-table td { border:1px solid #e1e1e1; padding:8px; text-align:left; }
     .fee-table th { background:#eefaf8; color:#333; }
+    .read-guide { display:none; align-items:center; gap:10px; margin:-8px 0 12px; }
+    .read-guide-bar { flex:1; height:6px; border-radius:999px; background:#f3dfdc; overflow:hidden; }
+    .read-guide-progress { display:block; width:0%; height:100%; background:#b42318; border-radius:999px;
+                           transition:width 0.2s ease; }
+    .read-guide-button { width:36px; height:36px; flex:0 0 36px; position:relative; border:1px solid #efc3bc;
+                         border-radius:50%; background:#fff7f5; cursor:pointer; }
+    .read-guide-button::before { content:""; position:absolute; left:50%; top:46%; width:9px; height:9px;
+                                 border-right:2px solid #b42318; border-bottom:2px solid #b42318;
+                                 transform:translate(-50%,-50%) rotate(45deg); }
+    .read-guide-button.complete::before { width:14px; height:7px; top:48%; border-right:2px solid #06a796;
+                                          border-bottom:2px solid #06a796; transform:translate(-50%,-50%) rotate(35deg); }
     .checkbox-container { display:flex; align-items:center; margin-bottom:20px; }
     .checkbox-container input { margin-right:10px;width:18px;height:18px; }
     .qr-container { text-align:center; margin-top:20px; display:none; }
@@ -71,11 +88,15 @@
 
     <!-- ===== 第二页：退款协议 + 支付 ===== -->
     <div class="page" id="page2">
-      <h1>《会员服务与使用须知》</h1>
+      <h1 class="terms-title">《会员服务与使用须知》</h1>
 
       <div class="checkbox-container">
         <input type="checkbox" id="agree">
         <label for="agree">我已阅读并同意以下条款</label>
+      </div>
+      <div class="read-guide" id="readGuide">
+        <div class="read-guide-bar"><span class="read-guide-progress" id="readProgress"></span></div>
+        <button class="read-guide-button" id="readGuideBtn" type="button" aria-label="继续向下阅读"></button>
       </div>
       <div class="contract" id="refundContent" style="display:none;">
         <h2>成优网®招聘平台<br>会员服务与使用须知</h2>
@@ -196,15 +217,37 @@
     const qrContainer = document.getElementById('qrContainer');
     const successMessage = document.getElementById('successMessage');
     const refundContent = document.getElementById('refundContent');
+    const readGuide = document.getElementById('readGuide');
+    const readProgress = document.getElementById('readProgress');
+    const readGuideBtn = document.getElementById('readGuideBtn');
+
+    function updateReadGuide() {
+      const maxScroll = refundContent.scrollHeight - refundContent.clientHeight;
+      const progress = maxScroll > 0 ? Math.min(refundContent.scrollTop / maxScroll, 1) : 1;
+      const isComplete = progress >= 0.99;
+
+      readProgress.style.width = `${Math.round(progress * 100)}%`;
+      readGuideBtn.classList.toggle('complete', isComplete);
+      payBtn.disabled = !(isComplete && agreeCheckbox.checked);
+    }
 
     agreeCheckbox.addEventListener('change', () => {
       refundContent.style.display = agreeCheckbox.checked ? 'block' : 'none';
+      readGuide.style.display = agreeCheckbox.checked ? 'flex' : 'none';
+      refundContent.scrollTop = 0;
       payBtn.disabled = true;
+      updateReadGuide();
     });
 
     refundContent.addEventListener('scroll', () => {
-      const scrollBottom = refundContent.scrollHeight - refundContent.scrollTop - refundContent.clientHeight;
-      payBtn.disabled = !(scrollBottom < 5 && agreeCheckbox.checked);
+      updateReadGuide();
+    });
+
+    readGuideBtn.addEventListener('click', () => {
+      refundContent.scrollBy({
+        top: refundContent.clientHeight * 0.8,
+        behavior: "smooth"
+      });
     });
 
     // 支付按钮点击逻辑
