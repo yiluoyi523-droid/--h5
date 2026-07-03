@@ -100,7 +100,43 @@
     <p>想做长期招聘效果，就必须合规经营。</p>
     <p>平台仅支持以上规范格式，福利内容需为真实可提供项目，不得随意编写。</p>
 
-    <a class="back-link" href="index.html">返回套餐页面</a>
+    <a class="back-link" id="backLink" href="/">返回套餐页面</a>
   </div>
+  <script>
+    function cleanToken(value) {
+      return String(value || '').trim().replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24);
+    }
+
+    function tokenFromReferrer() {
+      try {
+        if (!document.referrer) return '';
+        const referrer = new URL(document.referrer);
+        if (referrer.origin !== window.location.origin) return '';
+        const match = referrer.pathname.match(/^\/p\/([A-Za-z0-9_-]{4,24})\/?$/);
+        return match ? cleanToken(match[1]) : cleanToken(referrer.searchParams.get('t'));
+      } catch (error) {
+        return '';
+      }
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const token = cleanToken(params.get('t'))
+      || cleanToken(sessionStorage.getItem('cy_payment_token'))
+      || tokenFromReferrer();
+    const backLink = document.getElementById('backLink');
+
+    if (token) {
+      sessionStorage.setItem('cy_payment_token', token);
+      sessionStorage.setItem('cy_payment_url', `/p/${token}`);
+      backLink.href = `/p/${token}`;
+    } else {
+      backLink.addEventListener('click', (event) => {
+        if (window.history.length > 1) {
+          event.preventDefault();
+          window.history.back();
+        }
+      });
+    }
+  </script>
 </body>
 </html>

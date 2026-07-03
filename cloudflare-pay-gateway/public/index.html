@@ -137,15 +137,15 @@
       position:relative;
       overflow:hidden;
       margin:0 0 14px;
-      padding:13px 14px;
+      padding:14px;
       color:#27374d;
       font-size:14px;
-      line-height:1.65;
       background:
         linear-gradient(135deg,rgba(235,255,249,0.96),rgba(245,249,255,0.96) 68%,rgba(255,250,240,0.95));
       border:1px solid rgba(0,184,156,0.18);
       border-radius:8px;
-      box-shadow:0 10px 24px rgba(32,92,120,0.08);
+      box-shadow:0 12px 28px rgba(32,92,120,0.13);
+      isolation:isolate;
     }
     .link-meta::before {
       content:"";
@@ -156,8 +156,74 @@
       height:3px;
       background:linear-gradient(90deg,var(--brand),var(--sky),var(--warm));
     }
-    .link-meta strong { color:#087866; font-weight:800; }
-    .countdown { color:var(--danger); font-weight:800; }
+    .link-meta::after {
+      content:"";
+      position:absolute;
+      right:-40px;
+      bottom:-55px;
+      width:150px;
+      height:150px;
+      z-index:-1;
+      border-radius:50%;
+      background:radial-gradient(circle,rgba(0,184,156,0.13),rgba(0,184,156,0));
+    }
+    .meta-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+      padding-bottom:9px;
+      border-bottom:1px solid rgba(106,145,173,0.16);
+    }
+    .meta-company {
+      min-width:0;
+      color:#16233a;
+      font-size:15px;
+      font-weight:800;
+      line-height:1.35;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .meta-badge {
+      flex:0 0 auto;
+      padding:4px 8px;
+      color:#087866;
+      font-size:12px;
+      font-weight:800;
+      line-height:1.2;
+      background:rgba(255,255,255,0.74);
+      border:1px solid rgba(0,184,156,0.22);
+      border-radius:999px;
+    }
+    .meta-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+    .meta-row {
+      padding:9px 10px;
+      background:rgba(255,255,255,0.68);
+      border:1px solid rgba(106,145,173,0.14);
+      border-radius:8px;
+    }
+    .meta-label {
+      display:block;
+      margin-bottom:3px;
+      color:#667085;
+      font-size:12px;
+      line-height:1.2;
+    }
+    .meta-value {
+      display:block;
+      color:#16233a;
+      font-size:15px;
+      font-weight:800;
+      line-height:1.35;
+    }
+    .meta-value.amount, .countdown { color:var(--danger); }
+    .meta-full { grid-column:1 / -1; }
 
     .img-preview {
       display:block;
@@ -508,7 +574,7 @@
       <div class="link-meta" id="linkMeta"></div>
       <p>请查看套餐价格表如下：</p>
       <img class="img-preview" src="https://rpin-cc.oss-cn-chengdu.aliyuncs.com/zimu_zhaopin/2508/22/68a83171853a7.jpg" alt="套餐价格表">
-      <a class="doc-link" href="/job-posting-notes.html">职位发布与注意事项</a>
+      <a class="doc-link" id="jobNotesLink" href="/job-posting-notes.html">职位发布与注意事项</a>
       <button class="next-btn" id="nextBtn">下一步</button>
     </div>
 
@@ -667,6 +733,7 @@
     const linkStatus = document.getElementById('linkStatus');
     const appContainer = document.getElementById('appContainer');
     const linkMeta = document.getElementById('linkMeta');
+    const jobNotesLink = document.getElementById('jobNotesLink');
     const paymentKicker = document.getElementById('paymentKicker');
     const page1 = document.getElementById('page1');
     const page2 = document.getElementById('page2');
@@ -718,6 +785,16 @@
         .replace(/'/g, '&#39;');
     }
 
+    function compactDateTime(value) {
+      const date = new Date(value);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hour = String(date.getHours()).padStart(2, '0');
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      return `${year}/${month}/${day} ${hour}:${minute}`;
+    }
+
     function getRemainingMs() {
       if (!currentLink) return 0;
       return new Date(currentLink.expiresAt).getTime() - Date.now();
@@ -739,10 +816,32 @@
 
       const minutes = Math.floor(remaining / 60000);
       const seconds = Math.floor((remaining % 60000) / 1000);
-      const companyText = currentLink.targetCompany ? `对应企业：${escapeHtml(currentLink.targetCompany)}<br>` : '';
-      const amountText = currentLink.amount ? `本次应付：<strong>${escapeHtml(currentLink.amount)}</strong><br>` : '';
-      const planText = currentLink.planName ? `套餐：${escapeHtml(currentLink.planName)}<br>` : '';
-      linkMeta.innerHTML = `${companyText}${amountText}${planText}有效至：${formatDateTime(currentLink.expiresAt)}<br>剩余时间：<span class="countdown">${minutes}分${String(seconds).padStart(2, '0')}秒</span>`;
+      const companyText = currentLink.targetCompany ? escapeHtml(currentLink.targetCompany) : '专属付款链接';
+      const amountValue = currentLink.amount ? escapeHtml(currentLink.amount) : '对应会员金额';
+      const planValue = currentLink.planName ? escapeHtml(currentLink.planName) : '会员开通服务';
+      linkMeta.innerHTML = `
+        <div class="meta-head">
+          <div class="meta-company">${companyText}</div>
+          <span class="meta-badge">30分钟有效</span>
+        </div>
+        <div class="meta-grid">
+          <div class="meta-row">
+            <span class="meta-label">本次应付</span>
+            <span class="meta-value amount">${amountValue}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">套餐服务</span>
+            <span class="meta-value">${planValue}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">有效至</span>
+            <span class="meta-value">${compactDateTime(currentLink.expiresAt)}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">剩余时间</span>
+            <span class="meta-value countdown">${minutes}分${String(seconds).padStart(2, '0')}秒</span>
+          </div>
+        </div>`;
       paymentKicker.textContent = currentLink.amount
         ? `请支付对应会员套餐金额：${currentLink.amount}`
         : '请支付对应会员套餐金额';
@@ -767,6 +866,9 @@
         }
 
         currentLink = result.link;
+        sessionStorage.setItem('cy_payment_token', currentLink.token);
+        sessionStorage.setItem('cy_payment_url', `/p/${currentLink.token}`);
+        jobNotesLink.href = `/job-posting-notes.html?t=${encodeURIComponent(currentLink.token)}`;
         linkStatus.style.display = 'none';
         appContainer.style.display = 'block';
         updateCountdown();
